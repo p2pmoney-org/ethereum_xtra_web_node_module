@@ -9,10 +9,21 @@ var Module = class {
 		this.isready = false;
 		this.isloading = false;
 		
+		this.activated = true;
+		
 		this.authkeyinterface = null;
 		//this.authkey_server_access_instance = null;
 		
 		this.controllers = null;
+	}
+	
+	activation(choice) {
+		if (choice === false) {
+			this.activated = false;
+		}
+		else if (this.activated === false) {
+			this.activated = true;
+		}
 	}
 	
 	init() {
@@ -71,7 +82,12 @@ var Module = class {
 		
 		var global = this.global;
 		
+		global.registerHook('getVersionInfo_hook', this.name, this.getVersionInfo_hook);
+		global.modifyHookPriority('getVersionInfo_hook', this.name, -5);
+		
+		// initialization
 		global.registerHook('preFinalizeGlobalScopeInit_hook', this.name, this.preFinalizeGlobalScopeInit_hook);
+		global.registerHook('postFinalizeGlobalScopeInit_hook', this.name, this.postFinalizeGlobalScopeInit_hook);
 		
 		
 		// authkey actions
@@ -111,15 +127,53 @@ var Module = class {
 	//
 	// hooks
 	//
+	getVersionInfo_hook(result, params) {
+		console.log('getVersionInfo_hook called for ' + this.name);
+		
+		var global = this.global;
+		var _globalscope = global.getExecutionGlobalScope();
+		var Constants = _globalscope.simplestore.Constants;
+		var authkey_versioninfo = Constants.get('authkey_version');
+		
+		var versioninfos = params[0];
+		
+		var versioninfo = {};
+		
+		versioninfo.label = global.t('authkey');
+		versioninfo.value = (authkey_versioninfo && authkey_versioninfo.value ? authkey_versioninfo.value : global.t('unknown'));
+		
+		versioninfos.push(versioninfo);
+
+		
+		result.push({module: this.name, handled: true});
+		
+		return true;
+	}
+	
 	preFinalizeGlobalScopeInit_hook(result, params) {
 		console.log('preFinalizeGlobalScopeInit_hook called for ' + this.name);
 		
 		var global = this.global;
+		var _globalscope = global.getExecutionGlobalScope();
+
+		this.AuthKeyServerAccess = _globalscope.simplestore.AuthKeyServerAccess;
 
 		result.push({module: this.name, handled: true});
 		
 		return true;
 	}
+	
+	postFinalizeGlobalScopeInit_hook(result, params) {
+		console.log('postFinalizeGlobalScopeInit_hook called for ' + this.name);
+		
+		var global = this.global;
+		var _globalscope = global.getExecutionGlobalScope();
+
+		result.push({module: this.name, handled: true});
+		
+		return true;
+	}
+
 	
 	_getAppObject() {
 		var global = this.global;
@@ -133,6 +187,9 @@ var Module = class {
 		if (this.isready === false)
 			return false;
 		
+		if (this.activated === false)
+			return false;
+
 		var global = this.global;
 		var app = this._getAppObject();
 		
@@ -175,7 +232,10 @@ var Module = class {
 						
 						var mvccontroller = mvcmodule.getControllersObject();
 						
-						mvccontroller.gotoLoginPage();
+						if (mvccontroller && mvccontroller.gotoLoginPage)
+							mvccontroller.gotoLoginPage();
+						else 
+							console.log('WARNING: mvc controller has no gotoLoginPage method');
 					}
 				}
 				else {
@@ -194,7 +254,10 @@ var Module = class {
 								
 								var mvccontroller = mvcmodule.getControllersObject();
 								
-								mvccontroller.refreshPage();
+								if (mvccontroller && mvccontroller.gotoLoginPage)
+									mvccontroller.refreshPage();
+								else 
+									console.log('WARNING: mvc controller has no refreshPage method');
 							}
 							else {
 								console.log('error while loading user from server: ' + err);
@@ -249,6 +312,12 @@ var Module = class {
 	getSessionCryptoKeyObjects_hook(result, params) {
 		console.log('getSessionCryptoKeyObjects_hook called for ' + this.name);
 		
+		if (this.isready === false)
+			return false;
+		
+		if (this.activated === false)
+			return false;
+
 		var global = this.global;
 		var self = this;
 		
@@ -282,6 +351,9 @@ var Module = class {
 	
 	getAccountObjects_hook(result, params) {
 		console.log('getAccountObjects_hook called for ' + this.name);
+
+		if (this.activated === false)
+			return false;
 
 		var global = this.global;
 		var self = this;
@@ -330,6 +402,9 @@ var Module = class {
 	handleShowLoginBox_hook(result, params) {
 		console.log('handleShowLoginBox_hook called for ' + this.name);
 		
+		if (this.activated === false)
+			return false;
+
 		this.displayIdentificationBox();
 		
 		result.push({module: 'xtraconfig', handled: true});
@@ -345,7 +420,7 @@ var Module = class {
 		this._authenticate(username, password);
 	}
 	
-	_authenticate(session, username, password) {
+	_authenticate(session, username, password, callback) {
 		var global = this.global;
 		
 		var SessionClass = (typeof Session !== 'undefined' ? Session : global.getModuleObject('common').Session);
@@ -385,6 +460,9 @@ var Module = class {
 						}
 				
 						if (app) app.refreshDisplay();
+						
+						if (callback)
+							callback((authenticated ? null : 'could not authenticate user'), authenticated);
 					});
 					
 				}
@@ -525,11 +603,16 @@ var Module = class {
 	
 	alterLogoutForm_hook(result, params) {
 		console.log('alterLogoutForm_hook called for ' + this.name);
+		
+		var $scope = params[0];
+		var logoutform = params[1];
+		var session = params[2];
 	}
 	
 	handleLogoutSubmit_hook(result, params) {
 		console.log('handleLogoutSubmit_hook called for ' + this.name);
 		
+		var $scope = params[0];
 		var session = params[1];
 		
 		this._logout(session);
@@ -573,6 +656,7 @@ var Module = class {
 		return this.authkeyinterface;
 	}
 	
+	
 	getAuthKeyServerAccessInstance(session) {
 		if (session.authkey_server_access_instance)
 			return session.authkey_server_access_instance;
@@ -587,7 +671,12 @@ var Module = class {
 		inputparams.push(this);
 		inputparams.push(session);
 		
-		result[0] = new AuthKeyServerAccess(session);
+		if (!this.AuthKeyServerAccess) {
+			var _globalscope = global.getExecutionGlobalScope();
+			this.AuthKeyServerAccess = _globalscope.simplestore.AuthKeyServerAccess;;
+		}
+		
+		result[0] = new this.AuthKeyServerAccess(session);
 		
 		// call hook to let modify or replace instance
 		var ret = global.invokeHooks('getAuthKeyServerAccessInstance_hook', result, inputparams);

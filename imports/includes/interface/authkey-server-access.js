@@ -15,23 +15,32 @@ class AuthKeyServerAccess {
 	    var rest_server_url = this.session.getXtraConfigValue('authkey_server_url');
 	    var rest_server_api_path = this.session.getXtraConfigValue('authkey_server_api_path');
 	    
-	    if (!rest_server_url) {
-	    	// we look in Config
-			var Config = window.simplestore.Config;
+    	// we look in Config
+	    var session = this.session;
+	    var global = session.getGlobalObject();
+		var _globalscope = global.getExecutionGlobalScope();
+		var Config = _globalscope.simplestore.Config;
 
-	    	if (Config && (Config.get)  && (Config.get('authkey_server_url')))
-	    			rest_server_url = Config.get('authkey_server_url');
-	    }
+		if (Config && (Config.get)  && (Config.get('auth_server_url'))) {
+			// auth only
+			rest_server_url = Config.get('auth_server_url');
+		}
+		else if (Config && (Config.get)  && (Config.get('authkey_server_url'))) {
+	    	// dual auth & key
+    		rest_server_url = Config.get('authkey_server_url');
+    	}
 
-	    if (!rest_server_api_path) {
-	    	// we look in Config
-			var Config = window.simplestore.Config;
-
-	    	if (Config && (Config.get)  && (Config.get('authkey_server_api_path')))
-	    		rest_server_api_path = Config.get('authkey_server_api_path');
-	    }
-
-	    this.rest_auth_connection = this.session.createRestConnection(rest_server_url, rest_server_api_path);
+	    
+    	if (Config && (Config.get)  && (Config.get('auth_server_api_path'))) {
+			// auth only
+       		rest_server_api_path = Config.get('auth_server_api_path');
+    	}
+    	else if (Config && (Config.get)  && (Config.get('authkey_server_api_path'))) {
+	    	// dual auth & key
+    		rest_server_api_path = Config.get('authkey_server_api_path');
+    	}
+    	
+ 	    this.rest_auth_connection = this.session.createRestConnection(rest_server_url, rest_server_api_path);
 		
 		return this.rest_auth_connection;
 	}
@@ -62,22 +71,31 @@ class AuthKeyServerAccess {
 	    var rest_server_url = this.session.getXtraConfigValue('authkey_server_url');
 	    var rest_server_api_path = this.session.getXtraConfigValue('authkey_server_api_path');
 
-	    if (!rest_server_url) {
-	    	// we look in Config
-			var Config = window.simplestore.Config;
+		// we look in Config
+		var session = this.session;
+		var global = session.getGlobalObject();
+		var _globalscope = global.getExecutionGlobalScope();
+		var Config = _globalscope.simplestore.Config;
 
-	    	if (Config && (Config.get)  && (Config.get('authkey_server_url')))
-	    			rest_server_url = Config.get('authkey_server_url');
-	    }
+    	if (Config && (Config.get)  && (Config.get('key_server_url'))) {
+			// key only
+			rest_server_url = Config.get('key_server_url');
+    	}
+    	else if (Config && (Config.get)  && (Config.get('authkey_server_url'))) {
+	    	// dual auth & key
+    		rest_server_url = Config.get('authkey_server_url');
+    	}
 
-	    if (!rest_server_api_path) {
-	    	// we look in Config
-			var Config = window.simplestore.Config;
-
-	    	if (Config && (Config.get)  && (Config.get('authkey_server_api_path')))
-	    		rest_server_api_path = Config.get('authkey_server_api_path');
-	    }
-
+    	if (Config && (Config.get)  && (Config.get('key_server_api_path'))) {
+    		// key only
+   	     	rest_server_api_path = Config.get('key_server_api_path');
+    	}
+    	else if (Config && (Config.get)  && (Config.get('authkey_server_api_path'))) {
+	    	// dual auth & key
+    		rest_server_api_path = Config.get('authkey_server_api_path');
+    	}
+		
+		
 	    this.rest_key_connection = this.session.createRestConnection(rest_server_url, rest_server_api_path);
 		
 		return this.rest_key_connection;
@@ -350,7 +368,7 @@ class AuthKeyServerAccess {
 			try {
 				var resource = "/key/session/keys";
 				
-				self.rest_auth_get(resource, function (err, res) {
+				self.rest_key_get(resource, function (err, res) {
 					if (res) {
 						
 						if (callback)

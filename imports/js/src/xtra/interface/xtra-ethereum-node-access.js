@@ -50,13 +50,15 @@ var NodeCache = class {
 	}
 	
 	getValue(key) {
-		if (key in this.map) {
-			return this.map[key];
+		var keystring = key.toString().toLowerCase(); // stringify and use property instead of using Map object
+		if (keystring in this.map) {
+			return this.map[keystring];
 		} 
 	}
 	
 	putValue(key, value) {
-		this.map[key] = value;
+		var keystring = key.toString().toLowerCase();
+		this.map[keystring] = value;
 	}
 	
 	count() {
@@ -91,6 +93,8 @@ class Xtra_EthereumNodeAccess {
 		
 		this.ethereumnodeaccessmodule = ethereumnodeaccessmodule;
 		this.web3_version = ethereumnodeaccessmodule.web3_version;
+		
+		this.web3providerurl = null;
 	}
 	
 	isReady(callback) {
@@ -226,28 +230,44 @@ class Xtra_EthereumNodeAccess {
 	}
 	
 	_getWeb3Provider() {
-		return  this.ethereumnodeaccessmodule.getWeb3Provider(this.session);
+		return  this.ethereumnodeaccessmodule.getWeb3Provider(this.session, this.web3providerurl);
 	}
 	
 	_getWeb3Instance() {
 		if (this.web3instance)
 			return this.web3instance;
 		
-		this.web3instance = this.ethereumnodeaccessmodule.getWeb3Instance(this.session);		
+		this.web3instance = this.ethereumnodeaccessmodule.getWeb3Instance(this.session, this.web3providerurl);		
 		
-		console.log("web3 instance created in EthereumNodeAccess");
+		console.log("web3 instance created in Xtra_EthereumNodeAccess" + (this.web3providerurl ? " for " + this.web3providerurl : " (with default provider)"));
 		
 		return this.web3instance;
 	}
 	
 
 	// node
+	web3_getProviderUrl() {
+		if (this.web3providerurl)
+			return this.web3providerurl;
+		
+		this.web3providerurl = this.ethereumnodeaccessmodule.getWeb3ProviderUrl(this.session);
+		
+		return this.web3providerurl;
+	}
+	
 	web3_setProviderUrl(url, callback) {
 		console.log("Xtra_EthereumNodeAccess.web3_setProviderUrl called with: " + url);
 		
 		var self = this;
 		var session = this.session;
 
+		this.web3providerurl = url;
+		
+		// set header of restconnection
+		var restconnection = this.getRestConnection();
+		
+		restconnection.addToHeader({key: 'calltoken', value: url});
+		
 		var promise = new Promise(function (resolve, reject) {
 			
 			try {
@@ -257,7 +277,7 @@ class Xtra_EthereumNodeAccess {
 				
 				postdata = {web3url: url};
 
-				var promise2 = self.rest_put(resource, postdata, function (err, res) {
+				var promise2 = self.rest_post(resource, postdata, function (err, res) {
 					if (res) {
 						if (callback)
 							callback(null, res['data']);
@@ -781,6 +801,7 @@ class Xtra_EthereumNodeAccess {
 							transaction.setValue(tx['value']);
 							transaction.setCreationDate(creationdate);
 							transaction.setStatus(tx['status']);
+							transaction.setWeb3ProviderUrl(tx['web3providerurl']);
 						
 							transactionarray.push(transaction);
 						}
@@ -930,6 +951,13 @@ class Xtra_EthereumNodeAccess {
 		
 		if (ethtransaction.getTransactionUUID() === null)
 			ethtransaction.setTransactionUUID(session.guid());
+		
+		if (ethtransaction.web3providerurl === null) {
+			// fill with default provider url if caller didn't
+			console.log('WARNING: EthereumNodeAccess.web3_sendEthTransaction caller did not set provider url for transaction ' + ethtransaction.getTransactionUUID());
+			let web3providerurl = this.web3_getProviderUrl();
+			ethtransaction.setWeb3ProviderUrl(web3providerurl);
+		}
 		
 		var transactionuuid = ethtransaction.getTransactionUUID();
 		
@@ -1863,32 +1891,32 @@ class Xtra_EthereumNodeAccess {
 	
 	truffle_loadContract(artifact) {
 		//console.log('artifact is ' + JSON.stringify(artifact));
-		console.log("Xtra_EthereumNodeAccess.truffle_loadContract called for artifact " + (artifact.getUUID ? artifact.getUUID() : null));
+		console.log("Xtra_EthereumNodeAccess.truffle_loadContract called for artifact " + (artifact && artifact.getUUID ? artifact.getUUID() : null));
 		
 		return this.web3_loadContract(artifact) ;
 	}
 	
 	truffle_contract_at(trufflecontract, address) {
-		console.log("Xtra_EthereumNodeAccess.truffle_contract_at called for contractuuid " + (trufflecontract.getUUID ? trufflecontract.getUUID() : null) + " and blockchain address " + address);
+		console.log("Xtra_EthereumNodeAccess.truffle_contract_at called for contractuuid " + (trufflecontract && trufflecontract.getUUID ? trufflecontract.getUUID() : null) + " and blockchain address " + address);
 		
 		return this.web3_contract_at(trufflecontract, address)
 	}
 
 	
 	truffle_contract_new(trufflecontract, params) {
-		console.log("Xtra_EthereumNodeAccess.truffle_contract_new called for contractuuid " + trufflecontract.contractuuid);
+		console.log("Xtra_EthereumNodeAccess.truffle_contract_new called for contractuuid " + (trufflecontract ? trufflecontract.contractuuid : null));
 		
 		return this.web3_contract_new(trufflecontract, params);
 	}
 
 	truffle_method_call(constractinstance, methodname, params) {
-		console.log("Xtra_EthereumNodeAccess.truffle_method_call called for contractinstanceuuid " + constractinstance.contractinstanceuuid + " and method " + methodname);
+		console.log("Xtra_EthereumNodeAccess.truffle_method_call called for contractinstanceuuid " + (constractinstance ? constractinstance.contractinstanceuuid : null) + " and method " + methodname);
 		
 		return this.web3_method_call(constractinstance, methodname, params)
 	}
 	
 	truffle_method_sendTransaction(constractinstance, methodname, params) {
-		console.log("Xtra_EthereumNodeAccess.truffle_method_sendTransaction called for contractinstanceuuid " + constractinstance.getUUID() + " and method " + methodname);
+		console.log("Xtra_EthereumNodeAccess.truffle_method_sendTransaction called for contractinstanceuuid " + (constractinstance && constractinstance.getUUID ? constractinstance.getUUID() : null) + " and method " + methodname);
 		
 		return this.web3_method_sendTransaction(constractinstance, methodname, params)
 	}
