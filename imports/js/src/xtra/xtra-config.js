@@ -33,6 +33,10 @@ class XtraConfigModule {
 		}
 	}
 	
+	isActivated() {
+		return this.activated;
+	}
+	
 	overloadEthereumNodeAccess(choice) {
 		if (choice === false) {
 			this.overload_ethereum_node_access = false;
@@ -42,6 +46,10 @@ class XtraConfigModule {
 		}
 	}
 	
+	isEthereumNodeAccessOverloaded() {
+		return this.overload_ethereum_node_access;
+	}
+	
 	overloadStorageAccess(choice) {
 		if (choice === false) {
 			this.overload_storage_access = false;
@@ -49,6 +57,10 @@ class XtraConfigModule {
 		else if (this.overload_storage_access === false) {
 			this.overload_storage_access = true;
 		}
+	}
+	
+	isStorageAccessOverloaded() {
+		return this.overload_storage_access;
 	}
 	
 	registerAdditionalModules() {
@@ -330,6 +342,10 @@ class XtraConfigModule {
 		var ethnodeaccessmodule = params[0];
 		var session = params[1];
 		
+		// look if session deactivates overload
+		if (session.overload_ethereum_node_access === false)
+			return false;
+		
 		if (!this.EthereumNodeAccess) {
 			var global = this.global;
 			var _globalscope = global.getExecutionGlobalScope();
@@ -365,6 +381,10 @@ class XtraConfigModule {
 		
 		var storageaccessmodule = params[0];
 		var session = params[1];
+		
+		// look if session deactivates overload
+		if (session.overload_storage_access === false)
+			return false;
 		
 		if (!this.StorageAccess) {
 			var global = this.global;

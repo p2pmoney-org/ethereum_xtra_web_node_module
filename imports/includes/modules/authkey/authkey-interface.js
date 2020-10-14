@@ -22,20 +22,32 @@ var AuthKeyInterface = class {
 		
 		var authkeyserveraccess = this.module.getAuthKeyServerAccessInstance(session);
 		
-		return authkeyserveraccess.auth_session_status(function(err, res) {
-			if (!err) {
-				var sessionstatus = res;
-				
-				if (callback)
-					callback(null, sessionstatus);
-				
-				return sessionstatus;
-			}
-			else {
-				if (callback)
-					callback('could not obtain session status', null);
-			}
+		return new Promise((resolve, reject) => {
+			authkeyserveraccess.auth_session_status(function(err, res) {
+
+				if (!err) {
+					var sessionstatus = res;
+					
+					resolve(sessionstatus);
+				}
+				else {
+					reject('could not obtain session status');
+				}
+			});
+		})
+		.then((res) => {
+			if (callback)
+				callback(null, res);
+			
+			return res;
+		})
+		.catch(err => {
+			if (callback)
+				callback(err, null);
+					
+			throw new Error(err);
 		});
+		
 	}
 	
 	read_cryptokeys(session, callback) {
@@ -50,44 +62,76 @@ var AuthKeyInterface = class {
 		
 		var cryptokeyarray = [];
 		
-		return authkeyserveraccess.key_session_keys( function(err, res) {
+		return new Promise((resolve, reject) => {
+			authkeyserveraccess.key_session_keys( function(err, res) {
 			
-			if (res && res['keys']) {
-				var keys = res['keys'];
-				
-				for (var i = 0; i < keys.length; i++) {
-					var key = keys[i];
+				if (res && res['keys']) {
+					var keys = res['keys'];
 					
-					var keyuuid = key['key_uuid'];
-					var privatekey = key['private_key'];
-					var publickey = key['public_key'];
-					var address = key['address'];
-					var rsapublickey = key['rsa_public_key'];
-					var description = key['description'];
+					for (var i = 0; i < keys.length; i++) {
+						var key = keys[i];
+						
+						var keyuuid = key['key_uuid'];
+						var privatekey = key['private_key'];
+						var publickey = key['public_key'];
+						var address = key['address'];
+						var rsapublickey = key['rsa_public_key'];
+						var description = key['description'];
+						
+						var origin = key['origin'];
+						
+						if (privatekey) {
+							
+							var cryptokey = commonmodule.createBlankCryptoKeyObject(session);
+							
+							cryptokey.setKeyUUID(keyuuid);
+							cryptokey.setDescription(description);
+							
+							cryptokey.setOrigin(origin);
+							
+							cryptokey.setPrivateKey(privatekey);
+							
+							cryptokeyarray.push(cryptokey);
+						}
+						else {
+							throw "Could not retrieve private key for a crypto key!";
+						}
 					
-					if (privatekey) {
-						
-						var cryptokey = commonmodule.createBlankCryptoKeyObject(session);
-						
-						cryptokey.setKeyUUID(keyuuid);
-						cryptokey.setDescription(description);
-						
-						cryptokey.setPrivateKey(privatekey);
-						
-						cryptokeyarray.push(cryptokey);
 					}
-					else {
-						throw "Could not retrieve private key for a crypto key!";
-					}
-				
+					
 				}
 				
-			}
-			
+				// we add cryptokeys to the session
+				// and to the user if session is not anonymous
+				if (cryptokeyarray.length > 0) {
+					var user = session.getSessionUserObject();
+					
+					for (var i = 0; i < cryptokeyarray.length; i++ ) {
+						session.addCryptoKeyObject(cryptokeyarray[i]);
+						
+						if (user) {
+							user.addCryptoKeyObject(cryptokeyarray[i]);
+						}
+					}
+	
+					
+				}
+				
+				resolve(res);
+			});
+		})
+		.then((res) => {
 			if (callback)
-				callback(null, cryptokeyarray);
-		});	
-		
+				callback(null, res);
+			
+			return res;
+		})
+		.catch(err => {
+			if (callback)
+				callback(err, null);
+					
+			throw new Error(err);
+		});
 	}
 	
 	load_user_in_session(session, callback) {
@@ -100,76 +144,46 @@ var AuthKeyInterface = class {
 		var commonmodule = global.getModuleObject('common');
 		var user = commonmodule.createBlankUserObject(session);
 		
-		var loaduserpromise = authkeyserveraccess.auth_session_user( function(err, res) {
-			var authenticated = (res && (res['status'] == '1') ? true : false);
-			
-			console.log("authentication is " + authenticated);
-			
-			if (authenticated){
-				user.setUserName(res['username']);
-				user.setUserEmail((res['useremail'] ? res['useremail'] : null));
-				user.setUserUUID((res['useruuid'] ? res['useruuid'] : null));
+		return new Promise((resolve, reject) => {
+			authkeyserveraccess.auth_session_user( function(err, res) {
+				var authenticated = (res && (res['status'] == '1') ? true : false);
 				
-				session.impersonateUser(user);
-			}
-			
-			return authenticated;
+				console.log("authentication is " + authenticated);
+				
+				if (authenticated){
+					user.setUserName(res['username']);
+					user.setUserEmail((res['useremail'] ? res['useremail'] : null));
+					user.setUserUUID((res['useruuid'] ? res['useruuid'] : null));
+					
+					session.impersonateUser(user);
+				}
+				
+				return resolve(authenticated);
+			});
 		})
-		.then(function(authenticated) {
+		.then((authenticated) => {
 			if (authenticated) {
 				
 				// load crypto keys
-				return authkeyserveraccess.key_session_keys( function(err, res) {
-					
-					if (res && res['keys']) {
-						var keys = res['keys'];
-						
-						for (var i = 0; i < keys.length; i++) {
-							var key = keys[i];
-							
-							var keyuuid = key['key_uuid'];
-							var privatekey = key['private_key'];
-							var publickey = key['public_key'];
-							var address = key['address'];
-							var rsapublickey = key['rsa_public_key'];
-							var description = key['description'];
-							
-							if (privatekey) {
-								
-								var cryptokey = commonmodule.createBlankCryptoKeyObject(session);
-								
-								cryptokey.setKeyUUID(keyuuid);
-								cryptokey.setDescription(description);
-								
-								cryptokey.setPrivateKey(privatekey);
-								
-								session.addCryptoKeyObject(cryptokey);
-							}
-							else {
-								throw "Could not retrieve private key for a crypto key!";
-							}
-						
-						}
-						
-					}
-					
-					if (callback)
-						callback(null, user);
-
-			
-				});
-				
+				return this.read_cryptokeys(session);
 			}
 			else {
-				if (callback)
-					callback('could not load user', null);
-				
-				return null;
+				return Promise.reject('could not load user');
 			}
 			
+		})
+		.then((res) => {
+			if (callback)
+				callback(null, res);
+			
+			return res;
+		})
+		.catch(err => {
+			if (callback)
+				callback(err, null);
+					
+			throw new Error(err);
 		});
-		
-		return loaduserpromise;
 	}
 
 
@@ -210,51 +224,14 @@ var AuthKeyInterface = class {
 			
 			return authenticated;
 		})
-		.then(function(authenticated) {
+		.then((authenticated) => {
 			if (authenticated) {
 				
 				// load crypto keys
-				return authkeyserveraccess.key_session_keys( function(err, res) {
-					
-					if (res && res['keys']) {
-						var keys = res['keys'];
-						
-						for (var i = 0; i < keys.length; i++) {
-							var key = keys[i];
-							
-							var keyuuid = key['key_uuid'];
-							var privatekey = key['private_key'];
-							var publickey = key['public_key'];
-							var address = key['address'];
-							var rsapublickey = key['rsa_public_key'];
-							var description = key['description'];
-							
-							if (privatekey) {
-								
-								var cryptokey = commonmodule.createBlankCryptoKeyObject(session);
-								
-								cryptokey.setKeyUUID(keyuuid);
-								cryptokey.setDescription(description);
-								
-								cryptokey.setPrivateKey(privatekey);
-								
-								session.addCryptoKeyObject(cryptokey);
-							}
-							else {
-								throw "Could not retrieve private key for a crypto key!";
-							}
-						
-						}
-						
-					}
-				});
-				
+				return this.read_cryptokeys(session);
 			}
 			else {
-				if (callback)
-					callback('could not authenticate user', null);
-				
-				return null;
+				return Promise.reject('could not authenticate user');
 			}
 			
 		});
@@ -267,6 +244,12 @@ var AuthKeyInterface = class {
 				callback(null, res[1]);
 			
 			return res[1];
+		})
+		.catch( (err) => {
+			if (callback)
+				callback(err, false);
+			
+			return false;
 		});
 	}
 	
@@ -278,15 +261,26 @@ var AuthKeyInterface = class {
 		
 		var useruuid = (session.getSessionUserObject() ? session.getSessionUserObject().getUserUUID() : null);
 		
-		return authkeyserveraccess.auth_session_logout(useruuid, function(err, res) {
-			var loggedout = (res['status'] == '1' ? true : false);
-			
-			console.log("log out result is " + loggedout);
-			
+		return new Promise((resolve, reject) => {
+			authkeyserveraccess.auth_session_logout(useruuid, function(err, res) {
+				var loggedout = (res['status'] == '1' ? true : false);
+				
+				console.log("log out result is " + loggedout);
+				
+				resolve(loggedout);
+			});
+		})
+		.then((res) => {
 			if (callback)
-				callback(null, loggedout);
+				callback(null, res);
 			
-			return loggedout;
+			return res;
+		})
+		.catch(err => {
+			if (callback)
+				callback(err, null);
+					
+			throw new Error(err);
 		});
 	}
 }

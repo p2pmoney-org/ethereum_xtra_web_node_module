@@ -4,11 +4,11 @@
 'use strict';
 
 
-console.log('ethereum_xtra_web node module');
+console.log('@p2pmoney-org/ethereum_xtra_web node module');
 
 if ( typeof window !== 'undefined' && window ) {
 	// react-native
-	console.log('creating window.simplestore in ethereum_xtra_web index.js');
+	console.log('creating window.simplestore in @p2pmoney-org/ethereum_xtra_web index.js');
 
 	window.simplestore = {};
 	
@@ -16,7 +16,7 @@ if ( typeof window !== 'undefined' && window ) {
 	
 } else if ((typeof global !== 'undefined') && (typeof global.simplestore === 'undefined')) {
 	// nodejs
-	console.log('creating global.simplestore in ethereum_xtra_web index.js');
+	console.log('creating global.simplestore in @p2pmoney-org/ethereum_xtra_web index.js');
 	global.simplestore = {};
 }
 

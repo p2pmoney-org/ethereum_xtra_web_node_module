@@ -8,7 +8,7 @@ var rootscriptloader = ScriptLoader.getRootScriptLoader();
 
 var globalscriptloader = ScriptLoader.findScriptLoader('globalloader')
 
-var xtrascriptloader = globalscriptloader.getChildLoader('xtraconfig');
+var xtrascriptloader = globalscriptloader.getChildLoader('@primusmoney/xtraconfig');
 
 rootscriptloader.push_import(xtrascriptloader,'../../imports/js/src/xtra/xtra-config.js');
 import '../../imports/js/src/xtra/xtra-config.js';

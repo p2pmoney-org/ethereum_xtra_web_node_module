@@ -8,6 +8,47 @@ class AuthKeyServerAccess {
 		this.rest_key_connection = null;
 	}
 	
+	__isValidURL(url) {
+		var pattern = new RegExp('^(https?:\\/\\/)?'+ // protocol
+					'((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.)+[a-z]{2,}|'+ // domain name
+					'((\\d{1,3}\\.){3}\\d{1,3}))'+ // OR ip (v4) address
+					'(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*'+ // port and path
+					'(\\?[;&a-z\\d%_.~+=-]*)?'+ // query string
+					'(\\#[-a-z\\d_]*)?$','i'); // fragment locator
+				
+		return !!pattern.test(url);
+	}
+	
+	_isReady() {
+		var session = this.session;
+		
+		var authconnection = this.getRestAuthConnection();
+		var keyconnection = this.getRestKeyConnection();
+
+		// TODO: uncomment for version >= 0.14.4
+		/*if (!authconnection._isReady()) 
+				return false;
+				
+		if (!keyconnection._isReady()) 
+			return false;
+			
+		return true;*/
+		
+		var authurl = authconnection.getRestCallUrl();
+		
+		if (!this.__isValidURL(authurl)) {
+			return false;
+		}
+		
+		var keyurl = keyconnection.getRestCallUrl();
+		
+		if (!this.__isValidURL(keyurl)) {
+			return false;
+		}
+		
+		return true;
+	}
+	
 	getRestAuthConnection() {
 		if (this.rest_auth_connection)
 			return this.rest_auth_connection;
@@ -363,6 +404,9 @@ class AuthKeyServerAccess {
 		var self = this
 		var session = this.session;
 
+		var rest_connection = this.getRestKeyConnection();
+		var rest_connection_url = rest_connection.getRestCallUrl();
+
 		var promise = new Promise(function (resolve, reject) {
 			
 			try {
@@ -370,6 +414,20 @@ class AuthKeyServerAccess {
 				
 				self.rest_key_get(resource, function (err, res) {
 					if (res) {
+						var keysjson = (res && res.keys ? res.keys : []);
+						
+						// add the origin of the keys
+						var origin = {storage: 'remote', url: rest_connection_url};
+						for (var i = 0; i < keysjson.length; i++) {
+							var key = keysjson[i];
+							
+							if (!key.origin) {
+								key.origin = origin;
+							}
+							else {
+								Object.assign(key.origin, origin);
+							}
+						}
 						
 						if (callback)
 							callback(null, res);
