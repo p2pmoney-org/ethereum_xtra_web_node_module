@@ -252,7 +252,7 @@ var Module = class {
 						// go to login page
 						var mvcmodule = global.getModuleObject('mvc');
 						
-						var mvccontroller = mvcmodule.getControllersObject();
+						var mvccontroller = (mvcmodule ? mvcmodule.getControllersObject() : null);
 						
 						if (mvccontroller && mvccontroller.gotoLoginPage)
 							mvccontroller.gotoLoginPage();
@@ -274,7 +274,7 @@ var Module = class {
 								// go to home page
 								var mvcmodule = global.getModuleObject('mvc');
 								
-								var mvccontroller = mvcmodule.getControllersObject();
+								var mvccontroller = (mvcmodule ? mvcmodule.getControllersObject() : null);
 								
 								if (mvccontroller && mvccontroller.gotoLoginPage)
 									mvccontroller.refreshPage();
@@ -846,7 +846,7 @@ var Module = class {
 				
 				var mvcmodule = global.getModuleObject('mvc');
 				
-				var mvccontroller = mvcmodule.getControllersObject();
+				var mvccontroller = (mvcmodule ? mvcmodule.getControllersObject() : null);
 				
 				if (mvccontroller && mvccontroller.gotoHome) {
 					mvccontroller.gotoHome();
@@ -945,7 +945,7 @@ var Module = class {
 					
 					var mvcmodule = global.getModuleObject('mvc');
 					
-					var mvccontroller = mvcmodule.getControllersObject();
+					var mvccontroller = (mvcmodule ? mvcmodule.getControllersObject() : null);
 					
 					if (mvccontroller && mvccontroller.gotoHome) {
 						mvccontroller.gotoHome();

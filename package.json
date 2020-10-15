@@ -1,14 +1,18 @@
 {
   "name": "@p2pmoney-org/ethereum_xtra_web",
-  "version": "0.14.6",
+  "version": "0.14.7",
   "author": "P2PMoney.org",
   "homepage": "http://www.p2pmoney.org/",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/p2pmoney-org/ethereum_xtra_web_node_module"
+  },
   "scripts": {
     "test:node": "mocha ./tests/tests.js"
   },
   "dependencies": {
-    "@p2pmoney-org/ethereum_core": "^0.14.6"
+    "@p2pmoney-org/ethereum_core": "^0.14.7"
   },
   "devDependencies": {
     "chai": "^4.2.0",

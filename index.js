@@ -6,7 +6,7 @@
 
 console.log('@p2pmoney-org/ethereum_xtra_web node module');
 
-if ( typeof window !== 'undefined' && window ) {
+if ( typeof window !== 'undefined' && window  && (typeof window.simplestore === 'undefined')) {
 	// react-native
 	console.log('creating window.simplestore in @p2pmoney-org/ethereum_xtra_web index.js');
 
