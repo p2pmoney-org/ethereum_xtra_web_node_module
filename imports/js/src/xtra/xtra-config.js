@@ -137,8 +137,16 @@ class XtraConfigModule {
 		this.isloading = true;
 
 		var self = this;
+		var global = this.global;
 
-		var modulescriptloader = parentscriptloader.getChildLoader('xtraconfigmoduleloader');
+		var modulescriptloader;
+
+		// look if xtraconfigmoduleloader already created (e.g. for loading in node.js)
+		modulescriptloader = global.findScriptLoader('xtraconfigmoduleloader');
+
+		// if not, create on as child as parent script loader passed in argument
+		if (!modulescriptloader)
+		modulescriptloader = parentscriptloader.getChildLoader('xtraconfigmoduleloader');
 
 		modulescriptloader.load_scripts(function() { self.init(); if (callback) callback(null, self); });
 
@@ -171,6 +179,10 @@ class XtraConfigModule {
 
 		// storage access facade
 		global.registerHook('getStorageAccessInstance_hook', this.name, this.getStorageAccessInstance_hook);
+		
+		// signal module is ready
+		var rootscriptloader = global.getRootScriptLoader();
+		rootscriptloader.signalEvent('on_xtraconfig_module_ready');
 	}
 	
 	postRegisterModule() {

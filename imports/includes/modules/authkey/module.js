@@ -49,8 +49,15 @@ var Module = class {
 		var self = this;
 		var global = this.global;
 
-		// authkey
-		var modulescriptloader = global.getScriptLoader('authkeyloader', parentscriptloader);
+		// authkey module script loader
+		var modulescriptloader;
+		
+		// look if authkeyloader already created (e.g. for loading in node.js)
+		modulescriptloader = global.findScriptLoader('authkeyloader');
+
+		// if not, create on as child as parent script loader passed in argument
+		if (!modulescriptloader)
+		modulescriptloader = global.getScriptLoader('authkeyloader', parentscriptloader);
 		
 		
 		var xtraroot = './includes';
@@ -115,6 +122,10 @@ var Module = class {
 		// vaults
 		global.registerHook('handleOpenVaultSubmit_hook', this.name, this.handleOpenVaultSubmit_hook);
 		global.registerHook('handleCreateVaultSubmit_hook', this.name, this.handleCreateVaultSubmit_hook);
+		
+		// signal module is ready
+		var rootscriptloader = global.getRootScriptLoader();
+		rootscriptloader.signalEvent('on_authkey_module_ready');
 	}
 	
 	postRegisterModule() {

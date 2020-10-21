@@ -68,6 +68,11 @@ class ReactNativeLoad {
 				rootscriptloader.signalEvent('on_xtra_web_module_ready');
 			});
 			
+			// end of modules load
+			rootscriptloader.registerEventListener('on_xtra_web_module_ready', function(eventname) {
+				if (callback)
+					callback(null, self);
+			});
 			
 		}
 		catch(e) {
