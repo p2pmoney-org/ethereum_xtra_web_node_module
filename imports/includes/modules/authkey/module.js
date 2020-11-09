@@ -4,6 +4,7 @@ var Module = class {
 	
 	constructor() {
 		this.name = 'authkey';
+		this.current_version = "0.20.0.2020.11.12";
 		
 		this.global = null; // put by global on registration
 		this.isready = false;
@@ -159,7 +160,13 @@ var Module = class {
 		var versioninfo = {};
 		
 		versioninfo.label = global.t('authkey');
-		versioninfo.value = (authkey_versioninfo && authkey_versioninfo.value ? authkey_versioninfo.value : global.t('unknown'));
+
+		if (authkey_versioninfo && authkey_versioninfo.value)
+			versioninfo.value = authkey_versioninfo.value; // overloaded
+		else if (this.current_version)
+			versioninfo.value = this.current_version; // hard-coded value
+		else
+			versioninfo.value = global.t('unknown');
 		
 		versioninfos.push(versioninfo);
 

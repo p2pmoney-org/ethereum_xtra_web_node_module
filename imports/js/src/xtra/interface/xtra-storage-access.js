@@ -17,15 +17,51 @@ class Xtra_StorageAccess {
 		
 		return promise
 	}
+
+	_checkRestConnectionHeader() {
+		if (!this.rest_connection)
+			return;
+
+		var rest_connection = this.rest_connection;
+
+		var connection_header = rest_connection.header;
+		var session = this.session;
+
+		var calltokenstring = connection_header['calltoken'];
+		var calljson = (calltokenstring ? JSON.parse(calltokenstring) : {});
+
+		// auth part (if any)
+		if (session.authkey_server_access_instance && session.authkey_server_access_instance.rest_auth_connection) {
+			var rest_auth_connection = session.authkey_server_access_instance.rest_auth_connection;
+
+			if (rest_auth_connection._isReady()) {
+				var authurl =  session.authkey_server_access_instance.rest_auth_connection.getRestCallUrl();
+			
+				if (calljson.auth != authurl) {
+					calljson.auth = authurl;
+					calltokenstring = JSON.stringify(calljson);
+					rest_connection.addToHeader({key: 'calltoken', value: calltokenstring});
+				}
+			}
+		}
+	}
 	
 	getRestConnection() {
-		if (this.rest_connection)
+		if (this.rest_connection) {
+			// check header before returning
+			// to potentially update authkey part
+			this._checkRestConnectionHeader();
+
 			return this.rest_connection;
+		}
 		
 	    var rest_server_url = this.session.getXtraConfigValue('rest_server_url');
 	    var rest_server_api_path = this.session.getXtraConfigValue('rest_server_api_path');
 
-	    this.rest_connection = this.session.createRestConnection(rest_server_url, rest_server_api_path);
+		this.rest_connection = this.session.createRestConnection(rest_server_url, rest_server_api_path);
+		
+		// set Header
+		this._checkRestConnectionHeader()
 		
 		return this.rest_connection;
 	}
@@ -35,6 +71,9 @@ class Xtra_StorageAccess {
 			return;
 		
 		this.rest_connection = restconnection;
+		
+		// set Header
+		this._checkRestConnectionHeader()
 	}
 	
 	rest_get(resource, callback) {

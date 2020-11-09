@@ -137,10 +137,54 @@ class Xtra_EthereumNodeAccess {
 		
 		return promise
 	}
+
+	_checkRestConnectionHeader() {
+		if (!this.rest_connection)
+			return;
+
+		// note: since version 0.20.0 calltoken became a json string
+		// was only web3_providerurl before that
+		var rest_connection = this.rest_connection;
+
+		var connection_header = rest_connection.header;
+		var session = this.session;
+
+		var calltokenstring = connection_header['calltoken'];
+		var calljson = (calltokenstring ? JSON.parse(calltokenstring) : {});
+
+		// auth part (if any)
+		if (session.authkey_server_access_instance && session.authkey_server_access_instance.rest_auth_connection) {
+			var rest_auth_connection = session.authkey_server_access_instance.rest_auth_connection;
+
+			if (rest_auth_connection._isReady()) {
+				var authurl =  session.authkey_server_access_instance.rest_auth_connection.getRestCallUrl();
+				
+				if (authurl) {
+					calljson.auth = authurl;
+				}
+				}
+			
+		}
+
+		// web3 part
+		if (this.web3providerurl) {
+			calljson.web3 = this.web3providerurl;
+		}
+
+		calltokenstring = JSON.stringify(calljson);
+		rest_connection.addToHeader({key: 'calltoken', value: calltokenstring});
+	}
+	
+
 	
 	getRestConnection() {
-		if (this.rest_connection)
+		if (this.rest_connection) {
+			// check header before returning
+			// to potentially update authkey part
+			this._checkRestConnectionHeader();
+
 			return this.rest_connection;
+		}
 		
 	    var rest_server_url = this.session.getXtraConfigValue('rest_server_url');
 	    var rest_server_api_path = this.session.getXtraConfigValue('rest_server_api_path');
@@ -171,6 +215,9 @@ class Xtra_EthereumNodeAccess {
 
     	this.rest_connection = this.session.createRestConnection(rest_server_url, rest_server_api_path);
 		
+		// set Header
+		this._checkRestConnectionHeader();
+		
 		return this.rest_connection;
 	}
 	
@@ -179,6 +226,9 @@ class Xtra_EthereumNodeAccess {
 			return;
 		
 		this.rest_connection = restconnection;
+		
+		// set Header
+		this._checkRestConnectionHeader()
 	}
 	
 	rest_get(resource, callback) {
@@ -295,9 +345,8 @@ class Xtra_EthereumNodeAccess {
 		this.web3providerurl = url;
 		
 		// set header of restconnection
-		var restconnection = this.getRestConnection();
-		
-		restconnection.addToHeader({key: 'calltoken', value: url});
+		this._checkRestConnectionHeader()
+
 		
 		var promise = new Promise(function (resolve, reject) {
 			

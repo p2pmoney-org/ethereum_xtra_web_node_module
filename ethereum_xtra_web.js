@@ -16,6 +16,11 @@ class Ethereum_xtra_web {
 		
 		this.ethereum_core = Ethereum_core.getObject();
 	}
+
+	getVersion() {
+		var packagejson = require('./package.json');
+		return packagejson.version;
+	}
 	
 	async init(callback) {
 		console.log('@p2pmoney-org/ethereum_xtra_web init called');

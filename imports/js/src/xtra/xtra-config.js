@@ -7,6 +7,7 @@
 class XtraConfigModule {
 	constructor() {
 		this.name = 'xtraconfig';
+		this.current_version = "0.20.0.2020.11.12";
 		
 		this.global = null; // put by global on registration
 		this.isready = false;
@@ -214,8 +215,14 @@ class XtraConfigModule {
 		
 		var versioninfo = {};
 		
-		versioninfo.label = global.t('ethereum webapp');
-		versioninfo.value = (ethereum_webapp_versioninfo && ethereum_webapp_versioninfo.value ? ethereum_webapp_versioninfo.value : global.t('unknown'));
+		versioninfo.label = global.t('ethereum xtra web');
+
+		if (ethereum_webapp_versioninfo && ethereum_webapp_versioninfo.value)
+			versioninfo.value = ethereum_webapp_versioninfo.value; // overloaded
+		else if (this.current_version)
+			versioninfo.value = this.current_version; // hard-coded value
+		else
+			versioninfo.value = global.t('unknown');
 		
 		versioninfos.push(versioninfo);
 
