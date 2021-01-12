@@ -1112,7 +1112,7 @@ class Xtra_EthereumNodeAccess {
 							postdata = {transactionuuid: transactionuuid, 
 									raw: raw,
 									
-									from: ethtransaction.getFromAddress(),
+									from: ethtransaction.getPayerAddress(),
 									to: ethtransaction.getToAddress(),
 									
 									value: ethtransaction.getValue(),
@@ -1151,7 +1151,7 @@ class Xtra_EthereumNodeAccess {
 					time: time,
 					duration: duration,
 					
-					from: ethtransaction.getFromAddress(),
+					from: ethtransaction.getPayerAddress(),
 					to: ethtransaction.getToAddress(),
 					
 					value: ethtransaction.getValue(),
@@ -1385,9 +1385,11 @@ class Xtra_EthereumNodeAccess {
 	_mustBeSigned(params) {
 		var session = this.session;
 		var global = session.getGlobalObject();
-		var _globalscope = global.getExecutionGlobalScope();
+		var EthereumTransactionClass = global.getModuleClass('ethereum-node-access', 'EthereumTransaction');
+		// !!! safer to use global.getModuleClass
+		//var _globalscope = global.getExecutionGlobalScope(); 
 		
-		var EthereumTransactionClass = (typeof EthereumTransaction !== 'undefined' ? EthereumTransaction : _globalscope.simplestore.EthereumTransaction);
+		//var EthereumTransactionClass = (typeof EthereumTransaction !== 'undefined' ? EthereumTransaction : _globalscope.simplestore.EthereumTransaction);
 
 		let txjson = params[params.length - 1];
 		let args = params.slice(0,-1);
