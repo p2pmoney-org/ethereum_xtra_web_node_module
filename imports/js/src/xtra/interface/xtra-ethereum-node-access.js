@@ -912,29 +912,60 @@ class Xtra_EthereumNodeAccess {
 		return promise;
 	}
 
-	web3_getTransactionCount(fromaddress, callback) {
+	web3_getTransactionCount(fromaddress, defaultBlock, callback) {
 		var self = this;
 		var session = this.session;
 
+		if (typeof defaultBlock == 'function') {
+			callback = defaultBlock;
+			defaultBlock = null;
+		}
+
 		var promise = new Promise(function (resolve, reject) {
 			try {
+				// post with defaultBlock in body
 				var resource = "/web3/account/" + fromaddress + '/tx/count';
 				
-				var promise2 = self.rest_get(resource, function (err, res) {
-					if (res) {
-						if (callback)
-							callback(null, res['count']);
-						
-						return resolve(res['count']);
-					}
-					else {
-						if (callback)
-							callback('error', null);
-						
-						reject('rest error calling ' + resource + ' : ' + err);
-					}
+				if (defaultBlock) {
+					var postdata = [];
 					
-				});
+					postdata = {defaultblock: defaultBlock};
+
+					var promise2 = self.rest_post(resource, postdata, function (err, res) {
+						if (res) {
+							if (callback)
+								callback(null, res['count']);
+							
+							return resolve(res['count']);
+						}
+						else {
+							if (callback)
+								callback('error', null);
+							
+							reject('rest error calling ' + resource + ' : ' + err);
+						}
+						
+					}); 
+				}
+				else {
+					// simple get
+					var promise2 = self.rest_get(resource, function (err, res) {
+						if (res) {
+							if (callback)
+								callback(null, res['count']);
+							
+							return resolve(res['count']);
+						}
+						else {
+							if (callback)
+								callback('error', null);
+							
+							reject('rest error calling ' + resource + ' : ' + err);
+						}
+						
+					});
+	
+				}
 			}
 			catch(e) {
 				if (callback)
@@ -1037,6 +1068,11 @@ class Xtra_EthereumNodeAccess {
 			console.log('WARNING: EthereumNodeAccess.web3_sendEthTransaction caller did not set provider url for transaction ' + ethtransaction.getTransactionUUID());
 			let web3providerurl = this.web3_getProviderUrl();
 			ethtransaction.setWeb3ProviderUrl(web3providerurl);
+		}
+
+		if (ethtransaction.ethereumnodeaccessinstance === null) {
+			// make sure to overload use of local access
+			ethtransaction._setEthereumNodeAccessInstance(this);
 		}
 		
 		var transactionuuid = ethtransaction.getTransactionUUID();
