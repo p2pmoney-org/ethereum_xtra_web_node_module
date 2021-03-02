@@ -125,7 +125,16 @@ class Xtra_EthereumNodeAccess {
 						
 						reject('could not set the web3 config on the server: ' + err);
 					}
+				})
+				.catch(err => {
+					console.log('promise rejection in Xtra_EthereumNodeAccess.isReady: ' + err);
+					
+					if (callback)
+						callback(err, null);
+
+					reject(err);
 				});
+;
 			}
 			else {
 				if (callback)
@@ -1052,7 +1061,7 @@ class Xtra_EthereumNodeAccess {
 	}
 	
 	web3_sendEthTransaction(ethtransaction, callback) {
-		console.log('EthereumNodeAccess.web3_sendEthTransaction called');
+		console.log('Xtra_EthereumNodeAccess.web3_sendEthTransaction called');
 		
 		if (!ethtransaction)
 			throw 'no transaction defined';
@@ -1065,7 +1074,7 @@ class Xtra_EthereumNodeAccess {
 		
 		if (ethtransaction.web3providerurl === null) {
 			// fill with default provider url if caller didn't
-			console.log('WARNING: EthereumNodeAccess.web3_sendEthTransaction caller did not set provider url for transaction ' + ethtransaction.getTransactionUUID());
+			console.log('WARNING: Xtra_EthereumNodeAccess.web3_sendEthTransaction caller did not set provider url for transaction ' + ethtransaction.getTransactionUUID());
 			let web3providerurl = this.web3_getProviderUrl();
 			ethtransaction.setWeb3ProviderUrl(web3providerurl);
 		}
@@ -1089,7 +1098,7 @@ class Xtra_EthereumNodeAccess {
 				// common callback function
 				var __transactioncallback = function(err, res) {
 					var transactionHash = res;
-					console.log('EthereumNodeAccess.web3_sendTransaction transactionHash is ' + transactionHash);
+					console.log('Xtra_EthereumNodeAccess.web3_sendTransaction transactionHash is ' + transactionHash);
 			         
 					if (!err) {
 						if (callback)
@@ -1566,7 +1575,7 @@ class Xtra_EthereumNodeAccess {
 				return this.web3_sendEthTransaction(ethereumtransaction, function(err, res) {
 					if (!err) {
 						var transactionHash = res;
-						console.log('EthereumNodeAcces.web3_contract_new transaction hash is: ' + transactionHash);
+						console.log('Xtra_EthereumNodeAccess.web3_contract_new transaction hash is: ' + transactionHash);
 						
 						if (callback)
 							callback(null, transactionHash);
@@ -1575,7 +1584,7 @@ class Xtra_EthereumNodeAccess {
 					}
 					else {
 						var error = 'error deploying contract: ' + err;
-						console.log('EthereumNodeAcces.web3_contract_new error:' + error);
+						console.log('Xtra_EthereumNodeAccess.web3_contract_new error:' + error);
 						
 						if (callback)
 							callback(error, null);
