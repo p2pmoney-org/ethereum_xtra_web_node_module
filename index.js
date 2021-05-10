@@ -1,5 +1,7 @@
 /**
- * 
+ * @author P2PMoney.org
+ * @homepage http://www.p2pmoney.org/
+ * @license MIT
  */
 'use strict';
 

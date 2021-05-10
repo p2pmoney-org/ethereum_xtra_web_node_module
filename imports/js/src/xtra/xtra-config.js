@@ -7,7 +7,7 @@
 class XtraConfigModule {
 	constructor() {
 		this.name = 'xtraconfig';
-		this.current_version = "0.20.10.2020.03.13";
+		this.current_version = "0.30.1.2021.05.13";
 		
 		this.global = null; // put by global on registration
 		this.isready = false;
@@ -444,6 +444,9 @@ class XtraConfig {
 		// ethereum web3 provider
 		this.web3_provider_url = ':web3_provider_url';
 		this.web3_provider_port = ':web3_provider_port';
+
+		this.web3_provider_chain_id = ':web3_provider_chain_id';
+		this.web3_provider_network_id = ':web3_provider_network_id';
 		
 		// ethereum transactions parameters
 		this.defaultgaslimit = ':defaultgaslimit';
@@ -517,6 +520,15 @@ class XtraConfig {
 
 			}
 
+			var overload_web3_provider_chain_id = (this.web3_provider_chain_id.substring(1) == 'web3_provider_chain_id' ? false : true);
+			if (overload_web3_provider_chain_id)
+				_globalscope.simplestore.Config.web3provider_chain_id =  parseInt(this.web3_provider_chain_id);
+
+			var overload_web3_provider_network_id = (this.web3_provider_network_id.substring(1) == 'web3_provider_network_id' ? false : true);
+			if (overload_web3_provider_network_id)
+				_globalscope.simplestore.Config.web3provider_network_id =  parseInt(this.web3_provider_network_id);
+	
+	
 			// ethereum transactions parameters
 			var overload_gaslimit = (this.defaultgaslimit.substring(1) == 'defaultgaslimit' ? false : true);
 			if (overload_gaslimit)

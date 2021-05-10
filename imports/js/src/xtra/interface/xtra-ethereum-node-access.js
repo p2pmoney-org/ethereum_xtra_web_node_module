@@ -50,6 +50,9 @@ var NodeCache = class {
 	}
 	
 	getValue(key) {
+		if (!key)
+			return;
+			
 		var keystring = key.toString().toLowerCase(); // stringify and use property instead of using Map object
 		if (keystring in this.map) {
 			return this.map[keystring];
@@ -57,6 +60,9 @@ var NodeCache = class {
 	}
 	
 	putValue(key, value) {
+		if (!key)
+			return;
+
 		var keystring = key.toString().toLowerCase();
 		this.map[keystring] = value;
 	}
@@ -95,6 +101,7 @@ class Xtra_EthereumNodeAccess {
 		this.web3_version = ethereumnodeaccessmodule.web3_version;
 		
 		this.web3providerurl = null;
+		this.web3artifactrooturi = null;
 	}
 	
 	isReady(callback) {
@@ -471,6 +478,46 @@ class Xtra_EthereumNodeAccess {
 		
 		return promise;
 	}
+
+	web3_getChainId(callback) {
+		console.log("Xtra_EthereumNodeAccess.web3_getChainId called");
+		
+		var self = this;
+		var session = this.session;
+
+		var promise = new Promise(function (resolve, reject) {
+			
+			try {
+				var resource = "/web3/node";
+				
+				var promise2 = self.rest_get(resource, function (err, res) {
+					var data = res['data'];
+					if (data) {
+						if (callback)
+							callback(null, data['chainid']);
+						
+						return resolve(data['chainid']);
+					}
+					else {
+						if (callback)
+							callback('error', null);
+						
+						reject('rest error calling ' + resource + ' : ' + err);
+					}
+					
+				});
+			}
+			catch(e) {
+				if (callback)
+					callback('exception: ' + e, null);
+				
+				reject('rest exception: ' + e);
+			}
+		});
+		
+		return promise;
+	}
+
 	
 	web3_getNetworkId(callback) {
 		console.log("Xtra_EthereumNodeAccess.web3_getNetworkId called");
@@ -1258,9 +1305,59 @@ class Xtra_EthereumNodeAccess {
 	}
 	
 	// contracts
+	_getArtifactFullUri(artifactpath) {
+		var _artifactfullpath;
+
+		if (!artifactpath)
+			return;
+
+		if (this.web3artifactrooturi) {
+			if ((this.web3artifactrooturi.endsWith('/') === false) &&
+				(artifactpath.startsWith('/') === false))
+				_artifactfullpath = this.web3artifactrooturi + '/' + artifactpath;
+			else
+				_artifactfullpath = this.web3artifactrooturi + artifactpath;
+		}
+		else {
+			_artifactfullpath = artifactpath;
+		}
+
+		return _artifactfullpath;
+	}
+	
+
+	web3_getArtifactRootUri() {
+		return this.web3artifactrooturi;
+	}
+	
+	web3_setArtifactRootUri(rooturi, callback) {
+		console.log('Xtra_EthereumNodeAccess.web3_setArtifactRootUri called with: ' + rooturi);
+
+		this.web3artifactrooturi = rooturi;
+		
+		if (callback)
+			callback(null, this.web3artifactrooturi);
+
+		return Promise.resolve(this.web3artifactrooturi);
+	}
 	
 	web3_loadArtifact(artifactpath, callback) {
 		console.log('Xtra_EthereumNodeAccess.web3_loadArtifact called');
+
+		if (!artifactpath) {
+			if (callback)
+				callback('artifact path is undefined', null);
+
+			return Promise.reject('artifact path is undefined');
+		}
+
+		var _artifactfullpath = artifactpath;
+
+		if ((artifactpath.startsWith('http://') === false) 
+			&& (artifactpath.startsWith('https://') === false)
+			&& (this.web3artifactrooturi)) {
+			_artifactfullpath = this._getArtifactFullUri(artifactpath)
+		}
 		
 		var self = this;
 		var session = this.session;
@@ -1289,7 +1386,7 @@ class Xtra_EthereumNodeAccess {
 					
 					var postdata = [];
 					
-					postdata = {artifactpath: artifactpath};
+					postdata = {artifactpath: _artifactfullpath};
 					
 					self.rest_post(resource, postdata, function (err, res) {
 						if (res) {
